@@ -1,0 +1,45 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #000000;
+  }
+  
+  header {
+    background-color: #bf0a0a;
+    color: white;
+    padding: 1em;
+    text-align: center;
+  }
+  
+  main {
+    padding: 2em;
+  }
+  .leaflet-popup-content p {
+    margin: 0.2em 0;
+}
+#map {
+    height: 400px;
+    width: 80%;
+    margin: 30px auto 0 auto;
+    display: block;
+}
+#panel {
+    width: 16%;
+    padding: 20px;
+    display: inline-block;
+    vertical-align: top;
+    text-align: center;
+    line-height: 42px;
+}
+.range-slider {
+    width: 55%;
+}
+.step {
+    width: 20%;
+}
+.leaflet-popup-content p {
+    margin: 0.2em 0;
+}
