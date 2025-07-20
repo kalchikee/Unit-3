@@ -1,235 +1,121 @@
-/* Interactive Web Map for Unit 2 - Activity 6 */
+window.onload = setMap;
 
-// Declare map and minValue in global scope
-var map;
-var minValue;
+function setMap() {
+    var promises = [
+        d3.json("data/uscities1.geojson"),
+        d3.json("data/states.json"),
+        d3.csv("data/uscities1.csv") // <-- Add this line
+    ];
+    Promise.all(promises).then(function(data) {
+        var geojsonData = data[0];
+        var topoData = data[1];
+        var csvData = data[2]; // <-- CSV data now available
 
-// Step 1: Create the Leaflet map
-function createMap() {
-    map = L.map('map', {
-        center: [40, -95],
-        zoom: 4
-    });
+        // You can now use csvData for joining attributes, choropleth, etc.
+        console.log("Loaded CSV data:", csvData);
 
-    // Add OpenTopoMap tile layer
-    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 17,
-        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-    }).addTo(map);
-
-    // Call getData function
-    getData();
-}
-
-// Step 2: Import GeoJSON data
-function getData() {
-    fetch("data/MegaCities.geojson")
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(json) {
-            // Step 3: build an attributes array from the data
-            var attributes = processData(json);
-            minValue = calculateMinValue(json);
-            // Call function to create proportional symbols
-            createPropSymbols(json, attributes);
-            // Create sequence controls
-            createSequenceControls(attributes);
-
-            // --- ADD THIS BLOCK FOR THE OVERLAY OPERATOR ---
-            fetch("data/overlay.geojson")
-                .then(response => response.json())
-                .then(overlayData => {
-                    var overlayLayer = L.geoJson(overlayData, {
-                        style: {
-                            color: "blue",
-                            weight: 2,
-                            fill: false
-                        }
-                    });
-
-                    // Add overlay control to the map
-                    var overlayMaps = {
-                        "Overlay Layer": overlayLayer
-                    };
-                    L.control.layers(null, overlayMaps).addTo(map);
-                });
-            // --- END OVERLAY BLOCK ---
-        });
-}
-
-// Step 3: build an attributes array from the data
-function processData(data) {
-    var attributes = [];
-    var properties = data.features[0].properties;
-    for (var attribute in properties) {
-        if (attribute.indexOf("Pop") > -1) {
-            attributes.push(attribute);
+        if (!geojsonData || !geojsonData.features) {
+            console.error("GeoJSON data missing or invalid.");
+            return;
         }
-    }
-    return attributes;
-}
-
-// Calculate the minimum value among all attributes for scaling
-function calculateMinValue(data) {
-    var allValues = [];
-    for (var city of data.features) {
-        for (var year = 1985; year <= 2015; year += 5) {
-            var value = Number(city.properties["Pop_" + String(year)]);
-            if (!isNaN(value)) {
-                allValues.push(value);
-            }
+        if (!topoData || !topoData.objects) {
+            console.error("TopoJSON data missing or invalid.");
+            return;
         }
-    }
-    return Math.min(...allValues);
-}
 
-// Calculate the radius of each proportional symbol using Flannery scaling
-function calcPropRadius(attValue) {
-    var minRadius = 5;
-    var radius = 1.0083 * Math.pow(attValue / minValue, 0.5715) * minRadius;
-    return radius;
-}
-
-// Function to convert markers to circle markers with popups
-function pointToLayer(feature, latlng, attributes, attribute) {
-    attribute = attribute || attributes[0];
-
-    var options = {
-        fillColor: "#ff7800",
-        color: "#000",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-    };
-
-    var attValue = Number(feature.properties[attribute]);
-    options.radius = calcPropRadius(attValue);
-
-    var layer = L.circleMarker(latlng, options);
-
-    // Styled popup content
-    var year = attribute.split("_")[1];
-    var popupContent = "<p><b>City:</b> " + feature.properties.City + "</p>";
-    popupContent += "<p><b>Population in " + year + ":</b> " + feature.properties[attribute] + " million</p>";
-
-    layer.bindPopup(popupContent, {
-        offset: new L.Point(0, -options.radius)
-    });
-
-    return layer;
-}
-
-// Step 3: Add circle markers for point features to the map
-function createPropSymbols(data, attributes) {
-    L.geoJson(data, {
-        pointToLayer: function(feature, latlng) {
-            return pointToLayer(feature, latlng, attributes, attributes[0]);
+        // Try to find the correct object name for states polygons
+        let objectName = "states";
+        if (!topoData.objects.states) {
+            objectName = Object.keys(topoData.objects)[0];
+            console.warn(`'states' object not found, using '${objectName}' instead.`);
         }
-    }).addTo(map);
-}
 
-// Step 1: Create new sequence controls
-function createSequenceControls(attributes) {
-    // Create range input element (slider)
-    var slider = "<input class='range-slider' type='range'></input>";
-    document.querySelector("#panel").insertAdjacentHTML('beforeend', slider);
-
-    // Set slider attributes
-    document.querySelector(".range-slider").max = attributes.length - 1;
-    document.querySelector(".range-slider").min = 0;
-    document.querySelector(".range-slider").value = 0;
-    document.querySelector(".range-slider").step = 1;
-
-    // Add step buttons
-    document.querySelector('#panel').insertAdjacentHTML('beforeend', '<button class="step" id="reverse">Reverse</button>');
-    document.querySelector('#panel').insertAdjacentHTML('beforeend', '<button class="step" id="forward">Forward</button>');
-
-    // Step 5: click listener for buttons
-    document.querySelectorAll('.step').forEach(function(step) {
-        step.addEventListener("click", function() {
-            var index = Number(document.querySelector('.range-slider').value);
-
-            if (step.id == 'forward') {
-                index++;
-                index = index > attributes.length - 1 ? 0 : index;
-            } else if (step.id == 'reverse') {
-                index--;
-                index = index < 0 ? attributes.length - 1 : index;
-            }
-
-            document.querySelector('.range-slider').value = index;
-            updatePropSymbols(attributes[index]);
-        });
-    });
-
-    // Step 5: input listener for slider
-    document.querySelector('.range-slider').addEventListener('input', function() {
-        var index = this.value;
-        updatePropSymbols(attributes[index]);
-    });
-}
-
-// Step 10: Resize proportional symbols according to new attribute values
-function updatePropSymbols(attribute) {
-    map.eachLayer(function(layer) {
-        if (layer.feature && layer.feature.properties[attribute]) {
-            var props = layer.feature.properties;
-            var radius = calcPropRadius(props[attribute]);
-            layer.setRadius(radius);
-
-            var popupContent = "<p><b>City:</b> " + props.City + "</p>";
-            var year = attribute.split("_")[1];
-            popupContent += "<p><b>Population in " + year + ":</b> " + props[attribute] + " million</p>";
-
-            var popup = layer.getPopup();
-            popup.setContent(popupContent).update();
+        var topoFeatures = topojson.feature(topoData, topoData.objects[objectName]);
+        if (!topoFeatures || !topoFeatures.features) {
+            console.error("No features found in TopoJSON object:", objectName);
+            return;
         }
+
+        var width = 960, height = 600;
+        var svg = d3.select("#map").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Optional: Add a background rectangle for contrast
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "#f8f8f8");
+
+        var projection = d3.geoAlbersUsa()
+            .scale(1200)
+            .translate([width / 2, height / 2]);
+
+        var path = d3.geoPath().projection(projection);
+
+        // --- Add Graticule ---
+        var graticule = d3.geoGraticule().step([5, 5]);
+
+        // Graticule background (optional, symbolizes water)
+        svg.append("path")
+            .datum(graticule.outline())
+            .attr("class", "gratBackground")
+            .attr("d", path);
+
+        // Graticule lines
+        svg.selectAll(".gratLines")
+            .data(graticule.lines())
+            .enter()
+            .append("path")
+            .attr("class", "gratLines")
+            .attr("d", path);
+        // --- End Graticule ---
+
+        // Draw polygons/lines from TopoJSON FIRST (background)
+        svg.selectAll(".region")
+            .data(topoFeatures.features)
+            .enter()
+            .append("path")
+            .attr("class", "region")
+            .attr("d", path)
+            .attr("fill", "#e0e7ef")
+            .attr("stroke", "#888")
+            .attr("stroke-width", 1)
+            .attr("opacity", 0.85);
+
+        // Draw state boundaries from TopoJSON (if available)
+        if (topoData.objects.states) {
+            svg.append("path")
+                .datum(topojson.mesh(topoData, topoData.objects.states, (a, b) => a !== b))
+                .attr("class", "state-boundary")
+                .attr("d", path)
+                .attr("fill", "none")
+                .attr("stroke", "#222")
+                .attr("stroke-width", 2.5);
+        }
+
+        // Draw city points from GeoJSON SECOND (foreground)
+        svg.selectAll("circle")
+            .data(geojsonData.features.filter(d => {
+                return d.geometry && d.geometry.coordinates &&
+                    projection(d.geometry.coordinates) !== null;
+            }))
+            .enter()
+            .append("circle")
+            .attr("cx", d => {
+                const coords = projection(d.geometry.coordinates);
+                return coords ? coords[0] : 0;
+            })
+            .attr("cy", d => {
+                const coords = projection(d.geometry.coordinates);
+                return coords ? coords[1] : 0;
+            })
+            .attr("r", 5) // larger points for clarity
+            .attr("fill", "#1976d2")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1)
+            .attr("opacity", 0.9);
+    }).catch(function(error) {
+        console.error("Error loading data:", error);
     });
 }
-
-function createSequenceControls(attributes) {
-    // Step 1: Create slider widget
-    var slider = "<input class='range-slider' type='range'></input>";
-    document.querySelector("#panel").insertAdjacentHTML('beforeend', slider);
-
-    // Step 1: Set slider attributes
-    document.querySelector(".range-slider").max = attributes.length - 1;
-    document.querySelector(".range-slider").min = 0;
-    document.querySelector(".range-slider").value = 0;
-    document.querySelector(".range-slider").step = 1;
-
-    // Step 2: Create step buttons
-    document.querySelector('#panel').insertAdjacentHTML('beforeend', '<button class="step" id="reverse">Reverse</button>');
-    document.querySelector('#panel').insertAdjacentHTML('beforeend', '<button class="step" id="forward">Forward</button>');
-
-    // Step 5: Listen for user input via affordances
-    document.querySelectorAll('.step').forEach(function(step) {
-        step.addEventListener("click", function() {
-            var index = Number(document.querySelector('.range-slider').value);
-
-            // Step 6 & 7: Increment/decrement and wrap around
-            if (step.id == 'forward') {
-                index++;
-                index = index > attributes.length - 1 ? 0 : index;
-            } else if (step.id == 'reverse') {
-                index--;
-                index = index < 0 ? attributes.length - 1 : index;
-            }
-
-            // Step 8: Update slider position
-            document.querySelector('.range-slider').value = index;
-
-            // Step 9 & 10: Update symbols and popups
-            updatePropSymbols(attributes[index]);
-        });
-    });
-
-    document.querySelector('.range-slider').addEventListener('input', function() {
-        var index = this.value;
-        updatePropSymbols(attributes[index]);
-    });
-}
-
-// Initialize the map when the page loads
-document.addEventListener('DOMContentLoaded', createMap);

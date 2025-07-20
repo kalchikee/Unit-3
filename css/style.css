@@ -1,4 +1,3 @@
-
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -42,4 +41,30 @@ body {
 }
 .leaflet-popup-content p {
     margin: 0.2em 0;
+}
+.countries {
+    fill: #FFF;
+    stroke: #CCC;
+    stroke-width: 2px;
+}
+.regions {
+    fill: #e0e0e0;
+    stroke: #333;
+    stroke-width: 1px;
+}
+.gratBackground {
+    fill: #D5E3FF;
+}
+.gratLines {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+}
+.map {
+    border: medium solid #999;
+}
+.region {
+    fill: #FFF;
+    stroke: #CCC;
+    stroke-width: 2px;
 }
