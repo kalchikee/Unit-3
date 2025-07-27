@@ -42,29 +42,63 @@ body {
 .leaflet-popup-content p {
     margin: 0.2em 0;
 }
+/* ===== MAP STYLES ===== */
 .countries {
     fill: #FFF;
     stroke: #CCC;
     stroke-width: 2px;
 }
+
 .regions {
-    fill: #e0e0e0;
-    stroke: #333;
+    fill: #e6f3ff;
+    stroke: #4a90a4;
     stroke-width: 1px;
 }
-.gratBackground {
-    fill: #D5E3FF;
+
+.region {
+    fill: #f8f9fa;
+    stroke: #dee2e6;
+    stroke-width: 2px;
 }
+
+/* ===== GRATICULE STYLES ===== */
+.gratBackground {
+    fill: #e3f2fd;
+}
+
 .gratLines {
     fill: none;
-    stroke: #999;
-    stroke-width: 1px;
+    stroke: #90a4ae;
+    stroke-width: 0.8px;
+    opacity: 0.6;
 }
+
+/* ===== MAP CONTAINER ===== */
 .map {
-    border: medium solid #999;
+    border: 2px solid #6c757d;
+    border-radius: 8px;
+    margin: 10px 0 0 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.region {
-    fill: #FFF;
-    stroke: #CCC;
+
+/* ===== CITY STYLES ===== */
+.cities {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+    opacity: 0.9;
+}
+
+.cities:hover {
+    stroke: #2c3e50;
     stroke-width: 2px;
+    opacity: 1;
+}
+
+/* ===== CHART STYLES ===== */
+.chart {
+    background-color: rgba(248,249,250,0.95);
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }

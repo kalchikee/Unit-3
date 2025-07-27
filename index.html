@@ -2,91 +2,342 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Unit 3 | D3.js Map & Bubble Chart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 3 | D3.js Choropleth Map & Coordinated Bar Chart</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Add before your other scripts if you use Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
-    <script src="js/main.js"></script>
     <style>
+        /* ===== BASE STYLES ===== */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        /* ===== LAYOUT CONTAINERS ===== */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        .container {
-            border: 2px solid #333;
-            border-radius: 5px;
+
+        header {
+            text-align: center;
+            color: #333; /* Keep this for fallback */
+            margin-bottom: 30px;
         }
-        .innerRect {
-            stroke: #333;
-            stroke-width: 2;
+
+        header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            color: #ffffff; /* Changed from #2c3e50 to white */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Added shadow for better readability */
         }
-        .circles {
-            stroke: #333;
-            stroke-width: 2;
-            fill-opacity: 0.7;
+
+        header h2 {
+            font-size: 1.3em;
+            margin: 10px 0 0 0;
+            font-weight: 300;
+            color: #ffffff; /* Changed from #7f8c8d to white */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Added shadow for better readability */
         }
+
+        /* ===== VISUALIZATION CONTAINERS ===== */
+        .visualization-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            margin: 30px auto;
+            max-width: 1200px;
+        }
+
+        #map {
+            display: block;
+            margin: 20px auto 60px auto;
+        }
+
+        #chart-container {
+            margin: 60px auto 10px auto; /* Changed bottom margin from 40px to 80px */
+            text-align: center;
+        }
+
+        /* ===== LEGEND STYLES ===== */
+        .legend-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px auto;
+            max-width: 800px;
+        }
+
+        .color-legend {
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .legend-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .legend-items {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #34495e;
+            border-radius: 4px;
+        }
+
+        .legend-text {
+            font-size: 1em;
+            color: #2c3e50;
+            font-weight: 500;
+            min-width: 80px;
+        }
+
+        /* ===== CHART STYLES ===== */
+        .bars {
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .numbers {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            fill: #2c3e50;
+            font-weight: 500;
+        }
+
+        .city-labels {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            fill: #34495e;
+            padding: 100px
+            text-anchor: middle;
+            font-weight: 600;
+
+        }
+
+        .chartTitle {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+            fill: #2c3e50;
+        }
+
+        .chartBackground {
+            fill: rgba(255,255,255,0.95);
+            stroke: #bdc3c7;
+            stroke-width: 2px;
+        }
+
+        /* ===== AXIS STYLES ===== */
         .axis path,
         .axis line {
             fill: none;
-            stroke: black;
+            stroke: #7f8c8d;
             stroke-width: 1px;
             shape-rendering: crispEdges;
         }
+
         .axis text {
-            font-family: sans-serif;
-            font-size: 0.9em;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            fill: #34495e;
         }
-        .title {
-            font-family: sans-serif;
-            font-size: 1.5em;
+
+        /* ===== CONTENT SECTIONS ===== */
+        .content-section {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.8em;
             font-weight: bold;
-        }
-        .labels {
-            font-family: sans-serif;
-            font-size: 1em;
-        }
-        h1, h2, p {
+            color: #2c3e50;
             text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .section-description {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #34495e;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .features-list {
+            text-align: left;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .features-list li {
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+
+        .features-list strong {
+            color: #e74c3c;
+        }
+
+        /* ===== FOOTER STYLES ===== */
+        .data-sources {
+            margin-top: 50px;
+            font-size: 1em;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+        }
+
+        .data-sources a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 0 10px;
+        }
+
+        .data-sources a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px;
+            }
+
+            .visualization-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .legend-items {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            header h1 {
+                font-size: 2em;
+            }
+
+            header h2 {
+                font-size: 1.1em;
+            }
+
+            .content-section {
+                padding: 20px;
+                margin: 20px auto;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Unit 3</h1>
-        <h2>D3.js SVG Graphics & Map Projections</h2>
-    </header>
-    <!-- Add this div for Leaflet -->
-    <div id="map" style="width: 800px; height: 500px; margin: 0 auto;"></div>
-    <main>
-        <section style="max-width:800px; margin:0 auto; background:#fff; border-radius:8px; padding:20px;">
-            <h3>Introduction to TopoJSON</h3>
-        </section>
-        <p>This page demonstrates a D3.js bubble chart and a projected map with graticule lines using US cities and TopoJSON data.</p>
-        <!-- The SVG map will be injected here by bubblechart.js and main.js -->
-    </main>
+    <div class="main-container">
+        <!-- ===== HEADER SECTION ===== -->
+        <header>
+            <h1>Unit 3: Choropleth Mapping</h1>
+            <h2>Interactive D3.js Choropleth Map & Coordinated Bar Chart</h2>
+        </header>
+        
+        <!-- ===== COLOR LEGEND ===== -->
+        <div class="legend-container">
+            <div class="color-legend">
+                <div class="legend-title">Population Classification</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #D4B9DA;"></div>
+                        <span class="legend-text">Lowest</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #C994C7;"></div>
+                        <span class="legend-text">Low</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #DF65B0;"></div>
+                        <span class="legend-text">Medium</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #DD1C77;"></div>
+                        <span class="legend-text">High</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #980043;"></div>
+                        <span class="legend-text">Highest</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== MAP VISUALIZATION ===== -->
+        <div class="visualization-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- ===== BAR CHART VISUALIZATION ===== -->
+        <div id="chart-container"></div>
+        
+        <!-- ===== CONTENT DESCRIPTION ===== -->
+        <div class="content-section">
+            <h2 class="section-title">Choropleth Map & Coordinated Bar Chart</h2>
+            <p class="section-description">
+                This interactive visualization demonstrates a choropleth map of US cities colored by population, 
+                with a coordinated bar chart showing the top 5 cities from each population classification. 
+                Both visualizations use the same quantile color scale for consistent data representation.
+            </p>
+            
+            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 15px;">Key Features:</h3>
+            <ul class="features-list">
+                <li><strong>Choropleth Map:</strong> US cities displayed as colored circles based on population density</li>
+                <li><strong>Coordinated Bar Chart:</strong> Top 5 cities from each classification shown as sorted bars</li>
+                <li><strong>Quantile Classification:</strong> Data divided into 5 equal groups for meaningful comparison</li>
+                <li><strong>Color Legend:</strong> Clear visual guide for interpreting population classifications</li>
+                <li><strong>TopoJSON Integration:</strong> Efficient state boundaries using optimized geographic data</li>
+                <li><strong>Responsive Design:</strong> Adapts seamlessly to different screen sizes</li>
+            </ul>
+        </div>
+        
+        <!-- ===== DATA SOURCES ===== -->
+        <div class="data-sources">
+            <strong>Data Sources & Technology:</strong><br>
+            <a href="https://simplemaps.com/data/us-cities" target="_blank">US Cities Database (SimpleMaps)</a>
+            |
+            <a href="https://github.com/topojson/topojson" target="_blank">TopoJSON Format</a>
+            |
+            <a href="https://d3js.org/" target="_blank">D3.js Library</a>
+        </div>
+    </div>
 
-    <!-- D3.js Library -->
+    <!-- ===== JAVASCRIPT LIBRARIES ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <!-- D3 Geo Projections (optional, if using non-standard projections) -->
-    <script src="https://d3js.org/d3-geo-projection.v3.min.js"></script>
-    <!-- Bubble chart and map scripts -->
-    <script src="js/bubblechart.js"></script>
     <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
     <script src="js/main.js"></script>
-
-    <div style="margin-top:40px; font-size:1em; text-align:center;">
-        <strong>Data Source:</strong>
-        <a href="https://simplemaps.com/data/us-cities" target="_blank">
-            US Cities Database from SimpleMaps.com
-        </a>
-        <br>
-        <strong>TopoJSON Source:</strong>
-        <a href="https://github.com/topojson/topojson" target="_blank">
-            TopoJSON Master Repository
-        </a>
-    </div>
 </body>
 </html>
